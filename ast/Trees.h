@@ -928,7 +928,9 @@ public:
     core::TypePtr type;
     ExpressionPtr arg;
 
-    Cast(core::LocOffsets loc, core::TypePtr ty, ExpressionPtr arg, core::NameRef cast);
+    ExpressionPtr typeExpr;
+
+    Cast(core::LocOffsets loc, core::TypePtr ty, ExpressionPtr arg, core::NameRef cast, ExpressionPtr typeExpr);
 
     ExpressionPtr deepCopy() const;
 
@@ -938,7 +940,7 @@ public:
 
     void _sanityCheck();
 };
-CheckSize(Cast, 40, 8);
+CheckSize(Cast, 48, 8);
 
 EXPRESSION(Hash) {
 public:

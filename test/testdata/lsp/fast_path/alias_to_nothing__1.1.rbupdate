@@ -1,0 +1,5 @@
+# typed: true
+
+class A
+  def to_new; end
+end

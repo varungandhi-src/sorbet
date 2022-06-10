@@ -241,10 +241,8 @@ public:
 
     core::TypePtr processBinding(core::Context ctx, const cfg::CFG &inWhat, cfg::Binding &bind, int loopCount,
                                  int bindMinLoops, KnowledgeFilter &knowledgeFilter, core::TypeConstraint &constr,
-                                 core::TypePtr &methodReturnType);
-
-    void ensureGoodCondition(core::Context ctx, cfg::LocalRef cond) {}
-    void ensureGoodAssignTarget(core::Context ctx, cfg::LocalRef target) {}
+                                 core::TypePtr &methodReturnType,
+                                 std::optional<core::LocOffsets> parentBexitCondReceiverLoc);
 
     core::Loc locForUninitialized() const {
         return ownerLoc;

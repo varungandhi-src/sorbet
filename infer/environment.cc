@@ -941,7 +941,8 @@ core::TypePtr flatmapHack(core::Context ctx, const core::TypePtr &receiver, cons
 
 core::TypePtr Environment::processBinding(core::Context ctx, const cfg::CFG &inWhat, cfg::Binding &bind, int loopCount,
                                           int bindMinLoops, KnowledgeFilter &knowledgeFilter,
-                                          core::TypeConstraint &constr, core::TypePtr &methodReturnType) {
+                                          core::TypeConstraint &constr, core::TypePtr &methodReturnType,
+                                          optional<core::LocOffsets> parentBexitCondReceiverLoc) {
     try {
         core::TypeAndOrigins tp;
         bool noLoopChecking = cfg::isa_instruction<cfg::Alias>(bind.value) ||
@@ -989,6 +990,15 @@ core::TypePtr Environment::processBinding(core::Context ctx, const cfg::CFG &inW
                 auto multipleComponents = it->secondary != nullptr;
                 while (it != nullptr) {
                     for (auto &err : it->main.errors) {
+                        if (err->what == core::errors::Infer::UnknownMethod && parentBexitCondReceiverLoc.has_value()) {
+                            // TODO(jez) Might want to check whether the type of the variable
+                            // corresponding to the receiver loc has the method? Or is the same type
+                            // as the current receiver? Not sure
+                            if (auto e = ctx.beginError(bind.loc, core::errors::Infer::SuggestExplicitVariable)) {
+                                e.setHeader("yeah this won't work until you extract the recv to a variable");
+                                e.addErrorLine(ctx.locAt(parentBexitCondReceiverLoc.value()), "block cond was here");
+                            }
+                        }
                         ctx.state._error(std::move(err));
                     }
 

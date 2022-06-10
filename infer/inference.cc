@@ -86,6 +86,10 @@ unique_ptr<cfg::CFG> Inference::run(core::Context ctx, unique_ptr<cfg::CFG> cfg)
         }
         Environment &current = outEnvironments[bb->id];
         current.initializeBasicBlockArgs(*bb);
+
+        // TODO(jez) Explain this bespoke thing
+        optional<core::LocOffsets> parentBexitCondReceiverLoc;
+
         if (bb->backEdges.size() == 1) {
             auto *parent = bb->backEdges[0];
             bool isTrueBranch = parent->bexit.thenb == bb;
@@ -94,6 +98,8 @@ unique_ptr<cfg::CFG> Inference::run(core::Context ctx, unique_ptr<cfg::CFG> cfg)
                 auto &envAsSeenFromBranch =
                     Environment::withCond(ctx, outEnvironments[parent->id], tempEnv, isTrueBranch, current.vars());
                 current.populateFrom(ctx, envAsSeenFromBranch);
+
+                parentBexitCondReceiverLoc = parent->bexitCondReceiverLoc(ctx, *cfg);
             } else {
                 current.isDead = true;
             }
@@ -236,10 +242,9 @@ unique_ptr<cfg::CFG> Inference::run(core::Context ctx, unique_ptr<cfg::CFG> cfg)
         for (cfg::Binding &bind : bb->exprs) {
             i++;
             if (!current.isDead || !ctx.state.lspQuery.isEmpty()) {
-                current.ensureGoodAssignTarget(ctx, bind.bind.variable);
                 bind.bind.type =
                     current.processBinding(ctx, *cfg, bind, bb->outerLoops, bind.bind.variable.minLoops(*cfg),
-                                           knowledgeFilter, *constr, methodReturnType);
+                                           knowledgeFilter, *constr, methodReturnType, parentBexitCondReceiverLoc);
                 if (cfg::isa_instruction<cfg::Send>(bind.value)) {
                     totalSendCount++;
                     if (bind.bind.type && !bind.bind.type.isUntyped()) {
@@ -274,7 +279,6 @@ unique_ptr<cfg::CFG> Inference::run(core::Context ctx, unique_ptr<cfg::CFG> cfg)
         if (!current.isDead) {
             ENFORCE(bb->firstDeadInstructionIdx == -1);
             current.getAndFillTypeAndOrigin(ctx, bb->bexit.cond);
-            current.ensureGoodCondition(ctx, bb->bexit.cond.variable);
         } else {
             ENFORCE(bb->firstDeadInstructionIdx != -1);
         }

@@ -2817,6 +2817,7 @@ public:
                         for (auto &err : it->main.errors) {
                             if (err->what == core::errors::Infer::UnknownMethod && it->main.receiver.isNilClass()) {
                                 if (auto newErr = gs.beginError(err->loc, core::errors::Infer::CallAfterAndAnd)) {
+                                    //
                                     newErr.setHeader(
                                         "Call to method `{}` after `{}` assumes result type doesn't change",
                                         fun.show(gs), "&&");

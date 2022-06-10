@@ -73,6 +73,8 @@ public:
         counterInc("basicblocks");
     };
 
+    std::optional<core::LocOffsets> bexitCondReceiverLoc(core::Context ctx, const cfg::CFG &inWhat) const;
+
     std::string toString(const core::GlobalState &gs, const CFG &cfg) const;
     std::string toTextualString(const core::GlobalState &gs, const CFG &cfg) const;
     std::string showRaw(const core::GlobalState &gs, const CFG &cfg) const;

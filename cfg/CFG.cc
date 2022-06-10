@@ -292,6 +292,37 @@ string CFG::showRaw(core::Context ctx) const {
     return to_string(buf);
 }
 
+// TODO(jez) Give this a name that makes it more clear that it's nullopt except when it looks like
+// a call to an update knowledge method
+optional<core::LocOffsets> BasicBlock::bexitCondReceiverLoc(core::Context ctx, const cfg::CFG &inWhat) const {
+    if (this->exprs.empty()) {
+        return nullopt;
+    }
+
+    auto &lastBinding = this->exprs.back();
+    if (lastBinding.bind.variable != this->bexit.cond.variable) {
+        // Conservative heuristic, maybe we can make this smarter
+        // (Currently, only detect cases where the branch condition was the last thing computed)
+        return nullopt;
+    }
+
+    auto send = cfg::cast_instruction<cfg::Send>(lastBinding.value);
+    if (send == nullptr) {
+        return nullopt;
+    }
+
+    if (!send->recv.variable.isSyntheticTemporary(ctx, inWhat)) {
+        return nullopt;
+    }
+
+    // TODO(jez) All the update knowledge methods
+    if (send->fun != core::Names::nil_p()) {
+        return nullopt;
+    }
+
+    return send->receiverLoc;
+}
+
 string BasicBlock::toString(const core::GlobalState &gs, const CFG &cfg) const {
     fmt::memory_buffer buf;
     fmt::format_to(std::back_inserter(buf), "block[id={}, rubyRegionId={}]({})\n", this->id, this->rubyRegionId,
